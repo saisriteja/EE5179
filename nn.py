@@ -206,6 +206,159 @@ class Softmax():
 
 
 
+import numpy as np
+
+################################################
+#         Additional Helper Fucntions
+################################################
+class OneHotEncoder():
+    def __init__(self):
+        pass
+    
+    def fit(self, y, num_classes):
+        self.y = y
+        self.num_classes = num_classes
+
+    def transform(self):
+        transformed = np.zeros((self.num_classes, self.y.size))
+        for col,row in enumerate(self.y):
+            transformed[row, col] = 1
+        return transformed
+
+    def fit_transform(self, y, num_classes):
+        self.fit(y, num_classes)
+        return self.transform()
+
+    def inverse_transform(self, y):
+        # Assumes direct correation between the position and class number
+        y_class = np.argmax(y, axis=0)
+        return y_class
+
+
+class MinMaxScaler():
+    def __init__(self):
+        pass
+
+    def fit(self, X):
+        self.min = np.min(X, axis=0)
+        self.max = np.max(X, axis=0)
+
+    def transform(self, X):
+        transformed = (X - self.min)/(self.max-self.min)
+        return transformed
+
+    def fit_transform(self, X):
+        self.fit(X)
+        return self.transform(X)
+
+
+import numpy as np
+
+################################################
+#         Initializers
+################################################
+class RandomNormal():
+    def __init__(self, mean = 0.0, stddev = 1.0):
+        self.mean = mean
+        self.stddev = stddev
+    
+    def weights_biases(self, n_prev, n_curr):
+        W = np.random.normal(loc = self.mean, scale = self.stddev, \
+                             size = (n_prev, n_curr))
+        b = np.random.normal(loc = self.mean, scale = self.stddev, \
+                             size = (n_curr,))
+        return W, b
+    
+class XavierUniform():
+    def __init__(self):
+        pass
+    
+    def weights_biases(self, n_prev, n_curr):
+        upper_bound = np.sqrt(6.0/(n_prev + n_curr))
+        lower_bound = -1*upper_bound
+        W = np.random.uniform(low = lower_bound, high = upper_bound, \
+                              size = (n_prev, n_curr))
+        b = np.zeros((n_curr,), dtype = np.float64)
+        return W, b
+
+
+
+import numpy as np
+
+map_activations = {"Sigmoid":Sigmoid(), "Tanh":Tanh(), "Relu":Relu(), "Softmax":Softmax()}
+
+################################################
+#         Layers
+################################################
+class Input():
+    def __init__(self, data):
+        self.name = "Input"
+        self.input = data
+        self.size = self.input.shape[0]
+        # self.input = np.append(data, np.ones((1, data.shape[1])), axis=0)
+        # Having the input as the activated output 
+        # to be given to the next layer
+        self.a = self.input
+        self.type = "Input layer"
+
+    def __repr__(self):
+        representation = self.type + " - of Size:" + str(self.size)
+        return representation
+
+class Dense():
+    def __init__(self, size, activation, name, last=False):
+        self.name = name
+        self.size = size
+        self.activation = map_activations[activation]
+        self.activation_name = activation
+        self.type = "Dense layer"
+
+    def __repr__(self):
+        representation = self.type + " - of Size:" + str(self.size) + "; Activation:" + self.activation_name
+        return representation
+
+
+import numpy as np
+
+################################################
+#         Loss
+################################################
+class CrossEntropy():
+	def __init__(self):
+		pass
+
+	def calc_loss(self, t, y):
+		self.t = t
+		self.y = y
+		loss = -np.sum(np.sum(self.t*np.log(self.y)))
+		return loss
+
+	def diff(self):
+		grad = -self.t/(self.y)
+		return grad
+
+class SquaredError():
+	def __init__(self):
+		pass
+
+	def calc_loss(self, t, y):
+		self.t = t
+		self.y = y
+		loss = np.sum((t-y)**2)
+		return loss
+
+	def diff(self, t_batch, y_batch):
+		grad = -(t_batch - y_batch)
+		return grad
+
+
+
+
+
+
+
+
+
 import math
 import wandb
 import numpy as np
@@ -447,152 +600,3 @@ class NeuralNetwork():
                 print("Validation Accuracy:", acc_val)
             return acc_train, acc_val
         return acc_train
-
-import numpy as np
-
-################################################
-#         Additional Helper Fucntions
-################################################
-class OneHotEncoder():
-    def __init__(self):
-        pass
-    
-    def fit(self, y, num_classes):
-        self.y = y
-        self.num_classes = num_classes
-
-    def transform(self):
-        transformed = np.zeros((self.num_classes, self.y.size))
-        for col,row in enumerate(self.y):
-            transformed[row, col] = 1
-        return transformed
-
-    def fit_transform(self, y, num_classes):
-        self.fit(y, num_classes)
-        return self.transform()
-
-    def inverse_transform(self, y):
-        # Assumes direct correation between the position and class number
-        y_class = np.argmax(y, axis=0)
-        return y_class
-
-
-class MinMaxScaler():
-    def __init__(self):
-        pass
-
-    def fit(self, X):
-        self.min = np.min(X, axis=0)
-        self.max = np.max(X, axis=0)
-
-    def transform(self, X):
-        transformed = (X - self.min)/(self.max-self.min)
-        return transformed
-
-    def fit_transform(self, X):
-        self.fit(X)
-        return self.transform(X)
-
-
-import numpy as np
-
-################################################
-#         Initializers
-################################################
-class RandomNormal():
-    def __init__(self, mean = 0.0, stddev = 1.0):
-        self.mean = mean
-        self.stddev = stddev
-    
-    def weights_biases(self, n_prev, n_curr):
-        W = np.random.normal(loc = self.mean, scale = self.stddev, \
-                             size = (n_prev, n_curr))
-        b = np.random.normal(loc = self.mean, scale = self.stddev, \
-                             size = (n_curr,))
-        return W, b
-    
-class XavierUniform():
-    def __init__(self):
-        pass
-    
-    def weights_biases(self, n_prev, n_curr):
-        upper_bound = np.sqrt(6.0/(n_prev + n_curr))
-        lower_bound = -1*upper_bound
-        W = np.random.uniform(low = lower_bound, high = upper_bound, \
-                              size = (n_prev, n_curr))
-        b = np.zeros((n_curr,), dtype = np.float64)
-        return W, b
-
-
-
-import numpy as np
-
-map_activations = {"Sigmoid":Sigmoid(), "Tanh":Tanh(), "Relu":Relu(), "Softmax":Softmax()}
-
-################################################
-#         Layers
-################################################
-class Input():
-    def __init__(self, data):
-        self.name = "Input"
-        self.input = data
-        self.size = self.input.shape[0]
-        # self.input = np.append(data, np.ones((1, data.shape[1])), axis=0)
-        # Having the input as the activated output 
-        # to be given to the next layer
-        self.a = self.input
-        self.type = "Input layer"
-
-    def __repr__(self):
-        representation = self.type + " - of Size:" + str(self.size)
-        return representation
-
-class Dense():
-    def __init__(self, size, activation, name, last=False):
-        self.name = name
-        self.size = size
-        self.activation = map_activations[activation]
-        self.activation_name = activation
-        self.type = "Dense layer"
-
-    def __repr__(self):
-        representation = self.type + " - of Size:" + str(self.size) + "; Activation:" + self.activation_name
-        return representation
-
-
-import numpy as np
-
-################################################
-#         Loss
-################################################
-class CrossEntropy():
-	def __init__(self):
-		pass
-
-	def calc_loss(self, t, y):
-		self.t = t
-		self.y = y
-		loss = -np.sum(np.sum(self.t*np.log(self.y)))
-		return loss
-
-	def diff(self):
-		grad = -self.t/(self.y)
-		return grad
-
-class SquaredError():
-	def __init__(self):
-		pass
-
-	def calc_loss(self, t, y):
-		self.t = t
-		self.y = y
-		loss = np.sum((t-y)**2)
-		return loss
-
-	def diff(self, t_batch, y_batch):
-		grad = -(t_batch - y_batch)
-		return grad
-
-
-
-
